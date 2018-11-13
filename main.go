@@ -36,7 +36,7 @@ func usage() {
 	%s=<telegram_bot_token> \
 	%s=<telegram_chat_id> \
 	%s=<link_to_gitlab_activity_rss> \
-	./gitlab-rss-tgbot
+	./gitlab-atom-tgbot
 `, tgTokenEnv, tgChatEnv, gitlabLinkEnv)
 	os.Exit(1)
 }
