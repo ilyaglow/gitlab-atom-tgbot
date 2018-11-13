@@ -19,6 +19,6 @@ Use environment variables to configure the bot:
 ```sh
 	TGBOT_TOKEN=<telegram_bot_token> \
 	TG_CHAT_ID=<telegram_chat_id> \
-	GITLAB_RSS_LINK=<link_to_gitlab_activity_rss> \
+	GITLAB_ATOM_LINK=<link_to_gitlab_activity_atom> \
 	./gitlab-atom-tgbot
 ```
