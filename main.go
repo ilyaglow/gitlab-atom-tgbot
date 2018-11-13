@@ -17,7 +17,7 @@ const (
 	boltFileName  = "team-records.db"
 	tgTokenEnv    = "TGBOT_TOKEN"
 	tgChatEnv     = "TG_CHAT_ID"
-	gitlabLinkEnv = "GITLAB_RSS_LINK"
+	gitlabLinkEnv = "GITLAB_ATOM_LINK"
 )
 
 var duration = 5 * time.Second
@@ -35,7 +35,7 @@ func usage() {
 	fmt.Printf(`Usage:
 	%s=<telegram_bot_token> \
 	%s=<telegram_chat_id> \
-	%s=<link_to_gitlab_activity_rss> \
+	%s=<link_to_gitlab_activity_atom> \
 	./gitlab-atom-tgbot
 `, tgTokenEnv, tgChatEnv, gitlabLinkEnv)
 	os.Exit(1)
@@ -45,21 +45,26 @@ func main() {
 	if (os.Getenv(tgTokenEnv) == "") || (os.Getenv(tgChatEnv) == "") || (os.Getenv(gitlabLinkEnv) == "") {
 		usage()
 	}
-	a, err := newRSSTgBot()
+	a, err := newAtomTgBot()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = a.procUpdates(true)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	ticker := time.NewTicker(duration)
 	for range ticker.C {
-		err := a.procUpdates()
+		err := a.procUpdates(false)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 }
 
-func newRSSTgBot() (*app, error) {
+func newAtomTgBot() (*app, error) {
 	db, err := bolt.Open(boltFileName, 0644, nil)
 	if err != nil {
 		return nil, err
@@ -123,7 +128,7 @@ func (a *app) addRecord(line string) error {
 	return err
 }
 
-func (a *app) procUpdates() error {
+func (a *app) procUpdates(initStart bool) error {
 	feed, err := a.fp.ParseURL(a.link)
 	if err != nil {
 		return err
@@ -138,12 +143,14 @@ func (a *app) procUpdates() error {
 			continue
 		}
 
-		_, err = a.bot.Send(a.chat, fmt.Sprintf("[%s](%s)", feed.Items[i].Title, feed.Items[i].Link), &tb.SendOptions{
-			ParseMode:             tb.ModeMarkdown,
-			DisableWebPagePreview: true,
-		})
-		if err != nil {
-			return err
+		if !initStart {
+			_, err = a.bot.Send(a.chat, fmt.Sprintf("[%s](%s)", feed.Items[i].Title, feed.Items[i].Link), &tb.SendOptions{
+				ParseMode:             tb.ModeMarkdown,
+				DisableWebPagePreview: true,
+			})
+			if err != nil {
+				return err
+			}
 		}
 		err = a.addRecord(feed.Items[i].GUID)
 		if err != nil {
