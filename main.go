@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -13,7 +12,15 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-const bucketName = "records"
+const (
+	bucketName    = "records"
+	boltFileName  = "team-records.db"
+	tgTokenEnv    = "TGBOT_TOKEN"
+	tgChatEnv     = "TG_CHAT_ID"
+	gitlabLinkEnv = "GITLAB_RSS_LINK"
+)
+
+var duration = 5 * time.Second
 
 type app struct {
 	fp     *gofeed.Parser
@@ -24,13 +31,26 @@ type app struct {
 	bot    *tb.Bot
 }
 
+func usage() {
+	fmt.Printf(`Usage:
+	%s=<telegram_bot_token> \
+	%s=<telegram_chat_id> \
+	%s=<link_to_gitlab_activity_rss> \
+	./gitlab-rss-tgbot
+`, tgTokenEnv, tgChatEnv, gitlabLinkEnv)
+	os.Exit(1)
+}
+
 func main() {
+	if (os.Getenv(tgTokenEnv) == "") || (os.Getenv(tgChatEnv) == "") || (os.Getenv(gitlabLinkEnv) == "") {
+		usage()
+	}
 	a, err := newRSSTgBot()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(duration)
 	for range ticker.C {
 		err := a.procUpdates()
 		if err != nil {
@@ -40,7 +60,7 @@ func main() {
 }
 
 func newRSSTgBot() (*app, error) {
-	db, err := bolt.Open("team-records.db", 0644, nil)
+	db, err := bolt.Open(boltFileName, 0644, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +68,7 @@ func newRSSTgBot() (*app, error) {
 	err = db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
 		if err != nil {
-			return errors.New("Create records bucket failed")
+			return fmt.Errorf("Create %s bucket %s failed", bucketName, boltFileName)
 		}
 		return nil
 	})
@@ -57,13 +77,13 @@ func newRSSTgBot() (*app, error) {
 	}
 
 	b, err := tb.NewBot(tb.Settings{
-		Token: os.Getenv("TGBOT_TOKEN"),
+		Token: os.Getenv(tgTokenEnv),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	chatID, err := strconv.ParseInt(os.Getenv("TG_CHAT_ID"), 10, 64)
+	chatID, err := strconv.ParseInt(os.Getenv(tgChatEnv), 10, 64)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +93,7 @@ func newRSSTgBot() (*app, error) {
 		chat: &tb.Chat{
 			ID: chatID,
 		},
-		link:   os.Getenv("GITLAB_RSS_LINK"),
+		link:   os.Getenv(gitlabLinkEnv),
 		db:     db,
 		bot:    b,
 		bucket: bucketName,
