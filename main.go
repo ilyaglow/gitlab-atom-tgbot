@@ -50,14 +50,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = a.procUpdates(true)
+	err = a.procActivity(true)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	ticker := time.NewTicker(duration)
 	for range ticker.C {
-		err := a.procUpdates(false)
+		err := a.procActivity(false)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -128,7 +128,7 @@ func (a *app) addRecord(line string) error {
 	return err
 }
 
-func (a *app) procUpdates(initStart bool) error {
+func (a *app) procActivity(initStart bool) error {
 	feed, err := a.fp.ParseURL(a.link)
 	if err != nil {
 		return err
@@ -144,10 +144,14 @@ func (a *app) procUpdates(initStart bool) error {
 		}
 
 		if !initStart {
-			_, err = a.bot.Send(a.chat, fmt.Sprintf("[%s](%s)", feed.Items[i].Title, feed.Items[i].Link), &tb.SendOptions{
-				ParseMode:             tb.ModeMarkdown,
-				DisableWebPagePreview: true,
-			})
+			_, err = a.bot.Send(
+				a.chat,
+				fmt.Sprintf("[%s](%s)", feed.Items[i].Title, feed.Items[i].Link),
+				&tb.SendOptions{
+					ParseMode:             tb.ModeMarkdown,
+					DisableWebPagePreview: true,
+				},
+			)
 			if err != nil {
 				return err
 			}
