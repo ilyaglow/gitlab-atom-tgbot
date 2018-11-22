@@ -1,0 +1,11 @@
+version: "2"
+services:
+  app:
+    build: .
+    volumes:
+      - ./team-records.db:/app/team-records.db
+    environment:
+      TGBOT_TOKEN: ${TGBOT_TOKEN}
+      TG_CHAT_ID: ${TG_CHAT_ID}
+      GITLAB_ATOM_LINK: ${GITLAB_ATOM_LINK}
+    restart: always
