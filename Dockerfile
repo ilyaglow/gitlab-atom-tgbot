@@ -23,6 +23,6 @@ RUN chmod +x /app/gitlab-atom-tgbot \
 
 USER app
 
-WORKDIR /app
+WORKDIR /app/data
 
-ENTRYPOINT ["./gitlab-atom-tgbot"]
+ENTRYPOINT ["/app/gitlab-atom-tgbot"]

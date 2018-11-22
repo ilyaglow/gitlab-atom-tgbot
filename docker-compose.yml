@@ -3,7 +3,7 @@ services:
   app:
     build: .
     volumes:
-      - ./team-records.db:/app/team-records.db
+      - ./data/:/app/data/
     environment:
       TGBOT_TOKEN: ${TGBOT_TOKEN}
       TG_CHAT_ID: ${TG_CHAT_ID}
