@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -20,7 +21,10 @@ const (
 	gitlabLinkEnv = "GITLAB_ATOM_LINK"
 )
 
-var duration = 5 * time.Second
+var (
+	duration = 5 * time.Second
+	escaper  = strings.NewReplacer("[", "\\[", "]", "\\]")
+)
 
 type app struct {
 	fp     *gofeed.Parser
@@ -146,7 +150,11 @@ func (a *app) procActivity(initStart bool) error {
 		if !initStart {
 			_, err = a.bot.Send(
 				a.chat,
-				fmt.Sprintf("[%s](%s)", feed.Items[i].Title, feed.Items[i].Link),
+				fmt.Sprintf(
+					"[%s](%s)",
+					escaper.Replace(feed.Items[i].Title),
+					feed.Items[i].Link,
+				),
 				&tb.SendOptions{
 					ParseMode:             tb.ModeMarkdown,
 					DisableWebPagePreview: true,
